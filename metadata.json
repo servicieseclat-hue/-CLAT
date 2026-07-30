@@ -1,0 +1,6 @@
+{
+  "name": "ERP ÉCLAT - Catering y Limpieza",
+  "description": "Sistema ERP móvil para Servicios Integrales de Limpieza y Catering ÉCLAT. Control de inventarios por estación, producción diaria, kardex, consumos, pedidos y gestión de usuarios con modo offline y sincronización.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
