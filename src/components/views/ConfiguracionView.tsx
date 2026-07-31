@@ -4,9 +4,9 @@
  */
 
 import React, { useState } from 'react';
-import { Usuario } from '../../types';
+import { Usuario, Estacion } from '../../types';
 import { Storage } from '../../lib/storage';
-import { Settings, RefreshCw, FileSpreadsheet, Database, HardDrive, Wifi, Plus, CheckCircle, RotateCcw } from 'lucide-react';
+import { Settings, RefreshCw, FileSpreadsheet, Database, HardDrive, Wifi, Plus, CheckCircle, RotateCcw, Edit3, Trash2, Check, X, MapPin } from 'lucide-react';
 
 interface ConfiguracionViewProps {
   currentUser: Usuario;
@@ -30,6 +30,49 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
   const [newEstacionNombre, setNewEstacionNombre] = useState<string>('');
   const [newEstacionUbicacion, setNewEstacionUbicacion] = useState<string>('');
   const [newEstacionEncargado, setNewEstacionEncargado] = useState<string>('');
+
+  // Station edit state
+  const [editingEstacion, setEditingEstacion] = useState<Estacion | null>(null);
+  const [editEstacionNombre, setEditEstacionNombre] = useState<string>('');
+  const [editEstacionUbicacion, setEditEstacionUbicacion] = useState<string>('');
+  const [editEstacionEncargado, setEditEstacionEncargado] = useState<string>('');
+
+  const handleStartEditEstacion = (est: Estacion) => {
+    setEditingEstacion(est);
+    setEditEstacionNombre(est.ESTACION);
+    setEditEstacionUbicacion(est.UBICACION);
+    setEditEstacionEncargado(est.ENCARGADO);
+  };
+
+  const handleSaveEditEstacion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEstacion) return;
+    const res = Storage.updateEstacion({
+      ...editingEstacion,
+      ESTACION: editEstacionNombre,
+      UBICACION: editEstacionUbicacion,
+      ENCARGADO: editEstacionEncargado
+    }, currentUser.ROL);
+
+    if (res.success) {
+      setEditingEstacion(null);
+      onRefreshData();
+      setSyncStatusMsg(`¡Campamento "${editEstacionNombre}" actualizado correctamente!`);
+      setTimeout(() => setSyncStatusMsg(''), 3000);
+    } else {
+      alert(res.error);
+    }
+  };
+
+  const handleToggleEstacionStatus = (est: Estacion) => {
+    const nuevoEstado = est.ESTADO === 'Activo' ? 'Inactivo' : 'Activo';
+    const res = Storage.updateEstacion({ ...est, ESTADO: nuevoEstado }, currentUser.ROL);
+    if (res.success) {
+      onRefreshData();
+    } else {
+      alert(res.error);
+    }
+  };
 
   const handleSaveSheetsConfig = () => {
     localStorage.setItem('ECLAT_SHEETS_WEBAPP_URL', sheetsUrl);
@@ -219,18 +262,37 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
             {/* Registered Stations List */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-800 uppercase">
-                Estaciones Activas
+                Estaciones y Campamentos Registrados ({estaciones.length})
               </label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {estaciones.map(est => (
-                  <div key={est.ID_ESTACION} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+                  <div key={est.ID_ESTACION} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between items-center gap-2">
                     <div>
-                      <div className="font-black text-slate-900">{est.ESTACION}</div>
-                      <div className="text-[10px] text-slate-500">{est.UBICACION}</div>
+                      <div className="font-black text-slate-900 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#004346]" />
+                        <span>{est.ESTACION}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 pl-5">Ubicación: {est.UBICACION} | Encargado: {est.ENCARGADO}</div>
                     </div>
-                    <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                      {est.ESTADO}
-                    </span>
+                    
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleToggleEstacionStatus(est)}
+                        className={`font-bold px-2 py-0.5 rounded text-[10px] cursor-pointer ${
+                          est.ESTADO === 'Activo' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                        }`}
+                        title="Click para cambiar estado Activo / Inactivo"
+                      >
+                        {est.ESTADO}
+                      </button>
+                      <button
+                        onClick={() => handleStartEditEstacion(est)}
+                        className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg"
+                        title="Editar Datos del Campamento"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -239,12 +301,12 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
             {/* Add New Station Form */}
             <form onSubmit={handleAddEstacion} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
               <label className="block font-bold text-[#004346] uppercase">
-                Añadir Nueva Estación / Campamento
+                Añadir Nuevo Campamento / Estación
               </label>
 
               <input
                 type="text"
-                placeholder="Nombre (ej. Campamento Torrepampa Norte)"
+                placeholder="Nombre del Campamento (ej. Campamento Yanaquihua Norte)"
                 value={newEstacionNombre}
                 onChange={(e) => setNewEstacionNombre(e.target.value)}
                 className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold"
@@ -271,8 +333,77 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
                 type="submit"
                 className="w-full py-2.5 bg-[#004346] text-[#D6F3F4] font-black uppercase rounded-xl hover:bg-[#003133]"
               >
-                + Crear Estación con Inventario Independiente
+                + Crear Campamento con Inventario
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Station Modal */}
+      {editingEstacion && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-[#004346]" />
+                <h3 className="font-black text-[#004346] text-base uppercase">Editar Campamento / Estación</h3>
+              </div>
+              <button
+                onClick={() => setEditingEstacion(null)}
+                className="p-1 hover:bg-slate-100 rounded-lg text-slate-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditEstacion} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Nombre del Campamento / Estación</label>
+                <input
+                  type="text"
+                  value={editEstacionNombre}
+                  onChange={(e) => setEditEstacionNombre(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ubicación / Sector Operativo</label>
+                <input
+                  type="text"
+                  value={editEstacionUbicacion}
+                  onChange={(e) => setEditEstacionUbicacion(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Encargado / Cocinera Responsable</label>
+                <input
+                  type="text"
+                  value={editEstacionEncargado}
+                  onChange={(e) => setEditEstacionEncargado(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setEditingEstacion(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#004346] hover:bg-[#003133] text-[#D6F3F4] font-black rounded-xl uppercase"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
             </form>
           </div>
         </div>

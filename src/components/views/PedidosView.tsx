@@ -6,8 +6,8 @@
 import React, { useState } from 'react';
 import { Usuario, Pedido, Producto, ItemPedido } from '../../types';
 import { Storage } from '../../lib/storage';
-import { exportPedidoToExcel } from '../../lib/exportUtils';
-import { ShoppingCart, FileSpreadsheet, Plus, CheckCircle, Clock, Check, X, Search, Filter, Edit3, FileText, AlertCircle } from 'lucide-react';
+import { exportPedidoToExcel, exportAllPedidosToExcel } from '../../lib/exportUtils';
+import { ShoppingCart, FileSpreadsheet, Plus, CheckCircle, Clock, Check, X, Search, Filter, Edit3, FileText, AlertCircle, Download } from 'lucide-react';
 
 interface PedidosViewProps {
   currentUser: Usuario;
@@ -146,6 +146,15 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
     exportPedidoToExcel(pedido);
   };
 
+  const handleDownloadMasterExcel = () => {
+    const allPedidos = Storage.getPedidos('Todas');
+    if (allPedidos.length === 0) {
+      alert('No hay pedidos en la base de datos para exportar.');
+      return;
+    }
+    exportAllPedidosToExcel(allPedidos, 'Todos los Campamentos');
+  };
+
   // Filter products for the modal order table
   const filteredModalProductos = productos.filter(p => {
     const matchesSearch = p.PRODUCTO.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
@@ -174,7 +183,19 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Master Excel Export Button - Admin Only */}
+          {currentUser.ROL === 'Administrador' && (
+            <button
+              onClick={handleDownloadMasterExcel}
+              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+              title="Descargar Planilla Base de Datos Excel con pedidos de todos los campamentos"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Base de Datos Excel (Todos Campamentos)</span>
+            </button>
+          )}
+
           {/* Auto Suggestion Button */}
           <button
             onClick={handleGenerateSuggestion}
@@ -305,15 +326,15 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
 
       {/* Modal: Bulk Table Order Creation */}
       {showOrderModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border-2 border-[#004346] w-full max-w-4xl p-4 sm:p-6 space-y-4 max-h-[92vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border-2 border-[#004346] w-full max-w-6xl xl:max-w-7xl p-3 sm:p-5 space-y-3 max-h-[94vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b pb-3 border-slate-200 shrink-0">
+            <div className="flex items-center justify-between border-b pb-2.5 border-slate-200 shrink-0">
               <div className="flex items-center gap-2 text-[#004346]">
                 <ShoppingCart className="w-6 h-6" />
                 <div>
-                  <h3 className="font-black text-base uppercase tracking-tight">Tabla General de Pedido de Insumos</h3>
-                  <p className="text-[11px] text-slate-500">Ingrese directamente los números requeridos por cada insumo</p>
+                  <h3 className="font-black text-base sm:text-lg uppercase tracking-tight">Tabla General de Pedido de Insumos</h3>
+                  <p className="text-[11px] text-slate-500">Ingrese las cantidades requeridas para cada producto del catálogo</p>
                 </div>
               </div>
               <button
@@ -324,9 +345,9 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveOrder} className="flex-1 flex flex-col space-y-4 overflow-hidden">
+            <form onSubmit={handleSaveOrder} className="flex-1 flex flex-col space-y-3 overflow-hidden">
               {/* Meta Info Header Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 shrink-0 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shrink-0 text-xs">
                 <div>
                   <label className="block font-bold text-slate-800 uppercase mb-1 flex items-center justify-between">
                     <span>Estación Destino</span>
@@ -357,12 +378,12 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                 <div>
                   <label className="block font-bold text-slate-800 uppercase mb-1">Resumen de Selección</label>
                   <div className="p-2 bg-[#D6F3F4] text-[#004346] rounded-xl font-bold flex items-center justify-between">
-                    <span>{totalSelectedItemsCount} productos listados</span>
+                    <span>{totalSelectedItemsCount} productos seleccionados</span>
                     {totalSelectedItemsCount > 0 && (
                       <button
                         type="button"
                         onClick={handleClearQuantities}
-                        className="text-[10px] text-rose-700 hover:underline"
+                        className="text-[10px] text-rose-700 hover:underline font-bold"
                       >
                         Limpiar todo
                       </button>
@@ -379,7 +400,7 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                     type="text"
                     value={modalSearchQuery}
                     onChange={(e) => setModalSearchQuery(e.target.value)}
-                    placeholder="Filtrar por nombre de producto..."
+                    placeholder="Filtrar o buscar producto..."
                     className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#004346]"
                   />
                 </div>
@@ -397,18 +418,18 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                 </div>
               </div>
 
-              {/* Interactive Bulk Product Quantities Table */}
-              <div className="flex-1 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-inner">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 bg-[#004346] text-[#D6F3F4] text-[10px] font-black uppercase z-10">
+              {/* Interactive Bulk Product Quantities Table - Expanded Width */}
+              <div className="flex-1 overflow-x-auto overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-inner">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[750px]">
+                  <thead className="sticky top-0 bg-[#004346] text-[#D6F3F4] text-[11px] font-black uppercase z-10">
                     <tr>
-                      <th className="py-2.5 px-3">Código</th>
-                      <th className="py-2.5 px-3">Producto / Insumo</th>
-                      <th className="py-2.5 px-3">Categoría</th>
-                      <th className="py-2.5 px-3 text-center">Unidad</th>
-                      <th className="py-2.5 px-3 text-right">Stock Act.</th>
-                      <th className="py-2.5 px-3 text-right">Stock Mín.</th>
-                      <th className="py-2.5 px-3 text-center bg-[#003133] border-l border-[#005c60]">Cantidad a Pedir</th>
+                      <th className="py-2.5 px-4 w-28">Código</th>
+                      <th className="py-2.5 px-4 min-w-[220px]">Producto / Insumo</th>
+                      <th className="py-2.5 px-4 min-w-[150px]">Categoría</th>
+                      <th className="py-2.5 px-4 text-center w-24">Unidad</th>
+                      <th className="py-2.5 px-4 text-right w-28">Stock Actual</th>
+                      <th className="py-2.5 px-4 text-right w-28">Stock Mín.</th>
+                      <th className="py-2.5 px-4 text-center bg-[#003133] border-l border-[#005c60] w-36">Cantidad a Pedir</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -421,16 +442,16 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                         <tr
                           key={p.ID_PRODUCTO}
                           className={`hover:bg-slate-50 transition-colors ${
-                            isSelected ? 'bg-amber-50/80 font-bold' : ''
+                            isSelected ? 'bg-amber-50/90 font-bold' : ''
                           }`}
                         >
-                          <td className="py-2 px-3 font-mono text-[11px] text-slate-500">{p.ID_PRODUCTO}</td>
-                          <td className="py-2 px-3 font-bold text-slate-900">{p.PRODUCTO}</td>
-                          <td className="py-2 px-3 text-slate-600">{p.CATEGORIA}</td>
-                          <td className="py-2 px-3 text-center font-bold text-[#004346]">{p.UNIDAD}</td>
-                          <td className="py-2 px-3 text-right font-mono text-slate-700">{inv?.STOCK_ACTUAL || 0}</td>
-                          <td className="py-2 px-3 text-right font-mono text-slate-400">{p.STOCK_MINIMO}</td>
-                          <td className="py-2 px-3 text-center bg-slate-50/80 border-l border-slate-200">
+                          <td className="py-2.5 px-4 font-mono text-xs text-slate-500">{p.ID_PRODUCTO}</td>
+                          <td className="py-2.5 px-4 font-bold text-slate-900 text-xs sm:text-sm">{p.PRODUCTO}</td>
+                          <td className="py-2.5 px-4 text-slate-600 text-xs">{p.CATEGORIA}</td>
+                          <td className="py-2.5 px-4 text-center font-bold text-[#004346] text-xs">{p.UNIDAD}</td>
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-700 text-xs">{inv?.STOCK_ACTUAL || 0}</td>
+                          <td className="py-2.5 px-4 text-right font-mono text-slate-400 text-xs">{p.STOCK_MINIMO}</td>
+                          <td className="py-2.5 px-4 text-center bg-slate-50/80 border-l border-slate-200">
                             <input
                               type="number"
                               min="0"
@@ -438,7 +459,7 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                               placeholder="0"
                               value={qty}
                               onChange={(e) => handleQtyChange(p.ID_PRODUCTO, e.target.value)}
-                              className={`w-24 p-1.5 text-center font-mono font-black text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#004346] ${
+                              className={`w-28 p-1.5 text-center font-mono font-black text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#004346] ${
                                 isSelected
                                   ? 'bg-[#004346] text-[#D6F3F4] border-[#004346]'
                                   : 'bg-white text-slate-900 border-slate-300'
@@ -452,21 +473,18 @@ export const PedidosView: React.FC<PedidosViewProps> = ({
                 </table>
               </div>
 
-              {/* Apartado de Pedido Especial (Special Order Section) */}
-              <div className="bg-amber-50/80 border border-amber-300 p-3 rounded-2xl space-y-1.5 shrink-0">
-                <div className="flex items-center gap-2 text-amber-950 font-bold text-xs uppercase">
-                  <FileText className="w-4 h-4 text-amber-700" />
-                  <span>Apartado de Pedido Especial (Insumos o requerimientos no catalogados)</span>
+              {/* Apartado de Pedido Especial (Special Order Section) - Compacted */}
+              <div className="bg-amber-50/80 border border-amber-300 p-2.5 rounded-xl space-y-1 shrink-0">
+                <div className="flex items-center gap-1.5 text-amber-950 font-bold text-xs uppercase">
+                  <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Pedido Especial (Insumos no catalogados)</span>
                 </div>
-                <p className="text-[11px] text-slate-600">
-                  Si necesita un producto que no figura en la lista superior, escríbalo a continuación detallando la cantidad y especificación:
-                </p>
                 <textarea
                   value={specialOrderText}
                   onChange={(e) => setSpecialOrderText(e.target.value)}
-                  rows={2}
-                  placeholder="Ej. 2 Cajas de cera líquida especial para pisos, 5 Kilos de sazonador criollo, 1 Juego de cacerolas de repuesto..."
-                  className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#004346]"
+                  rows={1}
+                  placeholder="Detalle productos especiales no catalogados aquí (ej. 2 Cajas cera líquida, 5 Kg sazonador criollo...)"
+                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#004346]"
                 />
               </div>
 

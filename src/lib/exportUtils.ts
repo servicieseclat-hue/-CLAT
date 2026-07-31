@@ -57,6 +57,73 @@ export function exportPedidoToExcel(pedido: Pedido): void {
   XLSX.writeFile(workbook, fileName);
 }
 
+export function exportAllPedidosToExcel(pedidos: Pedido[], nombreEstacion: string = 'Todos los Campamentos'): void {
+  const rows: any[] = [];
+
+  pedidos.forEach((pedido) => {
+    pedido.ITEMS.forEach((item, idx) => {
+      rows.push({
+        'N° Item': idx + 1,
+        'N° Pedido': pedido.ID_PEDIDO,
+        'Campamento / Estación': pedido.ESTACION,
+        'Fecha Solicitud': pedido.FECHA_PEDIDO,
+        'Solicitante / Cocinera': pedido.SOLICITANTE,
+        'Origen': pedido.ORIGEN,
+        'Estado Pedido': pedido.ESTADO,
+        'Aprobado Por': pedido.APROBADO_POR || '-',
+        'Fecha Aprobación': pedido.FECHA_APROBACION ? new Date(pedido.FECHA_APROBACION).toLocaleDateString() : '-',
+        'Código Insumo': item.PRODUCTO_ID,
+        'Producto / Insumo': item.PRODUCTO,
+        'Categoría': item.CATEGORIA,
+        'Unidad': item.UNIDAD,
+        'Stock Actual': item.STOCK_ACTUAL,
+        'Stock Mínimo': item.STOCK_MINIMO,
+        'Cantidad Solicitada': item.CANTIDAD_SOLICITADA,
+        'Observación / Detalle': item.OBSERVACION_ITEM || pedido.OBSERVACIONES_GENERALES || '-'
+      });
+    });
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  XLSX.utils.sheet_add_aoa(worksheet, [
+    ['SERVICIOS INTEGRALES DE LIMPIEZA Y CATERING ÉCLAT S.A.C.'],
+    ['PLANILLA BASE DE DATOS MASTER DE PEDIDOS Y REQUERIMIENTOS'],
+    [`Filtro Campamentos: ${nombreEstacion.toUpperCase()}`],
+    [`Total Pedidos Registrados: ${pedidos.length}`],
+    [`Fecha de Generación: ${new Date().toLocaleString()}`],
+    ['']
+  ], { origin: 'A1' });
+
+  XLSX.utils.sheet_add_json(worksheet, rows, { origin: 'A7', skipHeader: false });
+
+  worksheet['!cols'] = [
+    { wch: 8 },  // N° Item
+    { wch: 14 }, // N° Pedido
+    { wch: 24 }, // Campamento
+    { wch: 14 }, // Fecha
+    { wch: 22 }, // Solicitante
+    { wch: 18 }, // Origen
+    { wch: 14 }, // Estado
+    { wch: 18 }, // Aprobado por
+    { wch: 16 }, // Fecha aprob
+    { wch: 14 }, // Cod Insumo
+    { wch: 32 }, // Producto
+    { wch: 20 }, // Categoria
+    { wch: 10 }, // Unidad
+    { wch: 12 }, // Stock Actual
+    { wch: 12 }, // Stock Min
+    { wch: 18 }, // Cant Solicitada
+    { wch: 35 }  // Obs
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Planilla Pedidos');
+
+  const fileName = `ECLAT_Planilla_Master_Pedidos_Campamentos_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+}
+
 export function exportInventarioToExcel(inventarios: Inventario[], nombreEstacion: string): void {
   const rows = inventarios.map((inv, idx) => ({
     'N°': idx + 1,

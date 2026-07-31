@@ -592,6 +592,39 @@ class EclatStorageManager {
     return { success: true };
   }
 
+  updateEstacion(estacion: Estacion, userRole: UserRole): { success: boolean; error?: string } {
+    if (userRole !== 'Administrador') {
+      return { success: false, error: 'Acceso denegado: Solo el Administrador puede modificar campamentos.' };
+    }
+    const idx = this.estaciones.findIndex(e => e.ID_ESTACION === estacion.ID_ESTACION);
+    if (idx !== -1) {
+      this.estaciones[idx] = { ...estacion };
+      this.inventarios.forEach(inv => {
+        if (inv.ESTACION_ID === estacion.ID_ESTACION) {
+          inv.ESTACION = estacion.ESTACION;
+        }
+      });
+      this.enqueueSync('Estaciones', 'UPDATE', estacion);
+      this.saveAllToDisk();
+      return { success: true };
+    }
+    return { success: false, error: 'Estación no encontrada' };
+  }
+
+  deleteEstacion(estacionId: string, userRole: UserRole): { success: boolean; error?: string } {
+    if (userRole !== 'Administrador') {
+      return { success: false, error: 'Acceso denegado: Solo el Administrador puede desactivar campamentos.' };
+    }
+    const idx = this.estaciones.findIndex(e => e.ID_ESTACION === estacionId);
+    if (idx !== -1) {
+      this.estaciones[idx].ESTADO = 'Inactivo';
+      this.enqueueSync('Estaciones', 'UPDATE', this.estaciones[idx]);
+      this.saveAllToDisk();
+      return { success: true };
+    }
+    return { success: false, error: 'Estación no encontrada' };
+  }
+
   // Delete/Cancel records older than 24h checks
   deleteConsumo(consumoId: string, userRole: UserRole): { success: boolean; error?: string } {
     const consumo = this.consumos.find(c => c.ID_CONSUMO === consumoId);

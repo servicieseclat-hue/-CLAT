@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Usuario, UserRole } from '../../types';
 import { Storage } from '../../lib/storage';
-import { Users, Plus, Shield, KeyRound, Lock, CheckCircle, AlertOctagon, UserCheck } from 'lucide-react';
+import { Users, Plus, Shield, KeyRound, Lock, CheckCircle, AlertOctagon, UserCheck, MapPin } from 'lucide-react';
 
 interface UsuariosViewProps {
   currentUser: Usuario;
@@ -23,11 +23,18 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
 
+  // User form state
   const [nombre, setNombre] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [pin, setPin] = useState<string>('1234');
   const [rol, setRol] = useState<UserRole>('Cocinera');
   const [estacionAsignada, setEstacionAsignada] = useState<string>(estaciones[0]?.ID_ESTACION || 'EST-001');
+
+  // New Campamento modal state
+  const [showAddCampamentoModal, setShowAddCampamentoModal] = useState<boolean>(false);
+  const [campNombre, setCampNombre] = useState<string>('');
+  const [campUbicacion, setCampUbicacion] = useState<string>('');
+  const [campEncargado, setCampEncargado] = useState<string>('');
 
   const [feedback, setFeedback] = useState<string>('');
 
@@ -104,6 +111,29 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
     }
   };
 
+  const handleSaveCampamento = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!campNombre.trim()) return;
+
+    const res = Storage.addEstacion({
+      ESTACION: campNombre.trim(),
+      UBICACION: campUbicacion.trim() || 'Sector Operativo',
+      ENCARGADO: campEncargado.trim() || 'Sin Asignar',
+      ESTADO: 'Activo'
+    }, currentUser.ROL);
+
+    if (res.success) {
+      setFeedback(`¡Nuevo campamento "${campNombre}" registrado correctamente! Ya se encuentra disponible para asignaciones de personal e inventarios.`);
+      setCampNombre('');
+      setCampUbicacion('');
+      setCampEncargado('');
+      setShowAddCampamentoModal(false);
+      onRefreshData();
+    } else {
+      alert(res.error || 'Error al crear el campamento.');
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header Banner */}
@@ -122,13 +152,23 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#004346] hover:bg-[#003133] text-[#D6F3F4] font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Personal</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowAddCampamentoModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>Crear Nuevo Campamento</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#004346] hover:bg-[#003133] text-[#D6F3F4] font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Nuevo Personal</span>
+          </button>
+        </div>
       </div>
 
       {feedback && (
@@ -265,6 +305,68 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
               <div className="flex justify-end gap-2 pt-2 border-t">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-200 font-bold rounded-xl">Cancelar</button>
                 <button type="submit" className="px-5 py-2 bg-[#004346] text-[#D6F3F4] font-black uppercase rounded-xl">Guardar Usuario</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Campamento Modal */}
+      {showAddCampamentoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border-2 border-[#004346] w-full max-w-md p-5 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-200">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-[#004346]" />
+                <h3 className="font-black text-base uppercase text-[#004346]">
+                  Crear Nuevo Campamento / Estación
+                </h3>
+              </div>
+              <button onClick={() => setShowAddCampamentoModal(false)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveCampamento} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-800 uppercase mb-1">Nombre del Campamento</label>
+                <input
+                  type="text"
+                  value={campNombre}
+                  onChange={(e) => setCampNombre(e.target.value)}
+                  placeholder="Ej. Campamento Yanaquihua Sur"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 uppercase mb-1">Ubicación / Sector Operativo</label>
+                <input
+                  type="text"
+                  value={campUbicacion}
+                  onChange={(e) => setCampUbicacion(e.target.value)}
+                  placeholder="Ej. Sector Minero N° 2"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 uppercase mb-1">Encargado / Responsable Inicial</label>
+                <input
+                  type="text"
+                  value={campEncargado}
+                  onChange={(e) => setCampEncargado(e.target.value)}
+                  placeholder="Ej. Chef / Cocinera Jefa"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium">
+                💡 Al crear el campamento se inicializará automáticamente su stock de inventario independiente para todos los insumos del catálogo.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <button type="button" onClick={() => setShowAddCampamentoModal(false)} className="px-4 py-2 bg-slate-200 font-bold rounded-xl">Cancelar</button>
+                <button type="submit" className="px-5 py-2 bg-[#004346] text-[#D6F3F4] font-black uppercase rounded-xl">+ Crear Campamento</button>
               </div>
             </form>
           </div>
