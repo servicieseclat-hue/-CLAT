@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogoEclat } from './LogoEclat';
 import { Usuario, Estacion } from '../types';
-import { Wifi, WifiOff, RefreshCw, LogOut, UserCheck, MapPin, ShieldAlert } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, LogOut, UserCheck, MapPin, ShieldAlert, KeyRound } from 'lucide-react';
 import { Storage } from '../lib/storage';
 
 interface HeaderProps {
@@ -15,6 +15,7 @@ interface HeaderProps {
   onStationChange: (stationId: string) => void;
   onLogout: () => void;
   onOpenSyncModal: () => void;
+  onOpenChangePinModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,7 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentStation,
   onStationChange,
   onLogout,
-  onOpenSyncModal
+  onOpenSyncModal,
+  onOpenChangePinModal
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
@@ -129,13 +131,23 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
 
-            <button
-              onClick={onLogout}
-              className="p-1.5 text-slate-300 hover:text-white hover:bg-[#005c60] rounded-md transition-colors"
-              title="Cerrar sesión / Cambiar Usuario"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onOpenChangePinModal}
+                className="p-1.5 text-amber-300 hover:text-white hover:bg-[#005c60] rounded-md transition-colors"
+                title="Cambiar mi PIN de acceso"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={onLogout}
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-[#005c60] rounded-md transition-colors"
+                title="Cerrar sesión / Cambiar Usuario"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

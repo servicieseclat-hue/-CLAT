@@ -6,16 +6,18 @@
 import React, { useState } from 'react';
 import { Usuario, Estacion } from '../../types';
 import { Storage } from '../../lib/storage';
-import { Settings, RefreshCw, FileSpreadsheet, Database, HardDrive, Wifi, Plus, CheckCircle, RotateCcw, Edit3, Trash2, Check, X, MapPin } from 'lucide-react';
+import { Settings, RefreshCw, FileSpreadsheet, Database, HardDrive, Wifi, Plus, CheckCircle, RotateCcw, Edit3, Trash2, Check, X, MapPin, KeyRound } from 'lucide-react';
 
 interface ConfiguracionViewProps {
   currentUser: Usuario;
   onRefreshData: () => void;
+  onOpenChangePinModal?: () => void;
 }
 
 export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
   currentUser,
-  onRefreshData
+  onRefreshData,
+  onOpenChangePinModal
 }) => {
   const syncQueue = Storage.getSyncQueue();
   const estaciones = Storage.getEstaciones();
@@ -248,6 +250,22 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({
               </button>
             )}
           </div>
+
+          {/* Security & Change PIN Card */}
+          {onOpenChangePinModal && (
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <label className="block text-xs font-bold text-[#004346] uppercase">
+                Seguridad de su Cuenta
+              </label>
+              <button
+                onClick={onOpenChangePinModal}
+                className="w-full py-2.5 bg-[#004346] hover:bg-[#003133] text-[#D6F3F4] font-black text-xs uppercase rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Cambiar mi Código PIN</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

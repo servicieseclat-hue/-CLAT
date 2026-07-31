@@ -10,6 +10,7 @@ import { Storage } from './lib/storage';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { LoginModal } from './components/LoginModal';
+import { ChangePinModal } from './components/ChangePinModal';
 import { Lock } from 'lucide-react';
 
 // Views
@@ -44,6 +45,7 @@ export default function App() {
 
   const [activeView, setActiveView] = useState<ActiveView>('INVENTARIOS');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(!currentUser);
+  const [showChangePinModal, setShowChangePinModal] = useState<boolean>(false);
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
   useEffect(() => {
@@ -59,6 +61,11 @@ export default function App() {
 
   const handleRefreshData = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handlePinChanged = (updatedUser: Usuario) => {
+    setCurrentUser(updatedUser);
+    handleRefreshData();
   };
 
   const handleLoginSuccess = (user: Usuario) => {
@@ -103,6 +110,7 @@ export default function App() {
             onStationChange={handleStationChange}
             onLogout={handleLogout}
             onOpenSyncModal={() => setActiveView('CONFIGURACION')}
+            onOpenChangePinModal={() => setShowChangePinModal(true)}
           />
 
           {/* Body Container */}
@@ -176,6 +184,7 @@ export default function App() {
                 <UsuariosView
                   currentUser={currentUser}
                   onRefreshData={handleRefreshData}
+                  onOpenChangePinModal={() => setShowChangePinModal(true)}
                 />
               )}
 
@@ -184,6 +193,7 @@ export default function App() {
                   <ConfiguracionView
                     currentUser={currentUser}
                     onRefreshData={handleRefreshData}
+                    onOpenChangePinModal={() => setShowChangePinModal(true)}
                   />
                 ) : (
                   <div className="bg-white rounded-2xl p-8 text-center border-2 border-amber-300 shadow-sm max-w-lg mx-auto space-y-4 my-8">
@@ -205,6 +215,15 @@ export default function App() {
               )}
             </div>
           </main>
+
+          {/* Change PIN Modal Overlay */}
+          {showChangePinModal && currentUser && (
+            <ChangePinModal
+              currentUser={currentUser}
+              onClose={() => setShowChangePinModal(false)}
+              onPinChanged={handlePinChanged}
+            />
+          )}
 
           {/* Sticky Mobile Quick Navigation Bar */}
           <footer className="bg-[#004346] text-white py-3 border-t-2 border-[#81c3d7] text-center text-xs text-[#D6F3F4] font-medium">

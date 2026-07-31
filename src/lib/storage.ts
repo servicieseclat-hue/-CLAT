@@ -573,6 +573,17 @@ class EclatStorageManager {
     return { success: false, error: 'Usuario no encontrado' };
   }
 
+  updateUserPin(userId: string, newPin: string): { success: boolean; error?: string } {
+    const idx = this.usuarios.findIndex(u => u.ID_USUARIO === userId);
+    if (idx !== -1) {
+      this.usuarios[idx].PIN = newPin;
+      this.enqueueSync('Usuarios', 'UPDATE', this.usuarios[idx]);
+      this.saveAllToDisk();
+      return { success: true };
+    }
+    return { success: false, error: 'Usuario no encontrado' };
+  }
+
   // --- STATIONS MANAGEMENT ---
   addEstacion(estacion: Omit<Estacion, 'ID_ESTACION'>, userRole: UserRole): { success: boolean; error?: string } {
     if (userRole !== 'Administrador') {

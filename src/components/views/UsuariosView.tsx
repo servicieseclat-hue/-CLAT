@@ -11,11 +11,13 @@ import { Users, Plus, Shield, KeyRound, Lock, CheckCircle, AlertOctagon, UserChe
 interface UsuariosViewProps {
   currentUser: Usuario;
   onRefreshData: () => void;
+  onOpenChangePinModal?: () => void;
 }
 
 export const UsuariosView: React.FC<UsuariosViewProps> = ({
   currentUser,
-  onRefreshData
+  onRefreshData,
+  onOpenChangePinModal
 }) => {
   const usuarios = Storage.getUsuarios();
   const estaciones = Storage.getEstaciones();
@@ -153,6 +155,16 @@ export const UsuariosView: React.FC<UsuariosViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onOpenChangePinModal && (
+            <button
+              onClick={onOpenChangePinModal}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Cambiar mi PIN</span>
+            </button>
+          )}
+
           <button
             onClick={() => setShowAddCampamentoModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95"
